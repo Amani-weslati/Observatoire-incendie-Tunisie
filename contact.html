@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact — Observatoire numérique des incendies de forêt en Tunisie</title>
+<meta name="description" content="Contact — Observatoire numérique des incendies de forêt en Tunisie." />
+
+<script>
+  (function () {
+    try {
+      const savedTheme = localStorage.getItem("theme-incendie");
+      const preferredTheme = savedTheme || "dark";
+      document.documentElement.setAttribute("data-theme", preferredTheme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  })();
+</script>
+
+<style>
+  :root {
+    --bg-main: #0d1a0d;
+    --bg-secondary: #132613;
+    --bg-card: rgba(255, 255, 255, 0.045);
+    --text-main: #ffffff;
+    --text-soft: #9FE1CB;
+    --text-muted: rgba(159, 225, 203, 0.78);
+    --accent: #ff4500;
+    --border: rgba(159, 225, 203, 0.18);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    --nav-bg: rgba(13, 26, 13, 0.92);
+  }
+
+  html[data-theme="light"] {
+    --bg-main: #f3faf5;
+    --bg-secondary: #eaf5ee;
+    --bg-card: rgba(255, 255, 255, 0.82);
+    --text-main: #102514;
+    --text-soft: #285c3a;
+    --text-muted: #4a6f58;
+    --accent: #ff4500;
+    --border: rgba(24, 75, 42, 0.18);
+    --shadow: 0 18px 45px rgba(40, 80, 50, 0.13);
+    --nav-bg: rgba(255, 255, 255, 0.94);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-soft);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--nav-bg);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-inner {
+    max-width: 1280px;
+    margin: auto;
+    padding: 0.65rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .brand {
+    color: var(--text-main);
+    font-weight: 800;
+    font-size: 1rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .brand-logo {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    border-radius: 50%;
+    background: #ffffff;
+    padding: 4px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+    transition: 0.25s ease;
+  }
+
+  .brand-logo:hover {
+    transform: scale(1.05);
+  }
+
+  .nav-links {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 1.7rem;
+  }
+
+  .nav-links a {
+    color: var(--text-soft);
+    font-weight: 700;
+    font-size: 0.95rem;
+    position: relative;
+    padding-bottom: 0.25rem;
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--accent);
+  }
+
+  .nav-links a.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.35rem;
+    width: 100%;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .theme-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-soft);
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.25s ease;
+    white-space: nowrap;
+  }
+
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .burger {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 1.7rem;
+    cursor: pointer;
+  }
+
+  .hero {
+    min-height: 58vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6.5rem 1.5rem 4rem;
+    background:
+      radial-gradient(circle at top right, rgba(255, 69, 0, 0.18), transparent 38%),
+      radial-gradient(circle at bottom left, rgba(159, 225, 203, 0.13), transparent 42%),
+      linear-gradient(135deg, var(--bg-main), var(--bg-secondary));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(159, 225, 203, 0.035) 0 1px, transparent 1px 58px),
+      repeating-linear-gradient(90deg, rgba(159, 225, 203, 0.035) 0 1px, transparent 1px 58px);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    max-width: 900px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    margin-bottom: 1.4rem;
+  }
+
+  .hero h1 {
+    color: var(--text-main);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    margin-bottom: 1.1rem;
+  }
+
+  .hero h1 span {
+    color: var(--accent);
+  }
+
+  .hero p {
+    max-width: 760px;
+    margin: 0 auto;
+    color: var(--text-soft);
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+  }
+
+  .section {
+    padding: 5.5rem 1.5rem;
+    background: var(--bg-main);
+  }
+
+  .section.alt {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: auto;
+  }
+
+  .section-kicker {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    color: var(--text-main);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    text-align: center;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .section-lead {
+    max-width: 850px;
+    margin: 0 auto 3rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.08rem;
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.4rem;
+  }
+
+  .contact-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    transition: 0.25s ease;
+    text-align: center;
+  }
+
+  .contact-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+  }
+
+  .person-photo,
+  .avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    margin: 0 auto 1.2rem;
+    border: 2px solid rgba(255, 69, 0, 0.45);
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+  }
+
+  .person-photo {
+    object-fit: cover;
+    display: block;
+  }
+
+  .avatar {
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+  }
+
+  .contact-card h3 {
+    color: var(--text-main);
+    font-size: 1.35rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .role {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 1.2rem;
+    min-height: 55px;
+  }
+
+  .email-link {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    border-radius: 999px;
+    padding: 0.75rem 1.15rem;
+    font-weight: 800;
+    font-size: 0.92rem;
+    word-break: break-word;
+    transition: 0.25s ease;
+  }
+
+  .email-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(255, 69, 0, 0.28);
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+  }
+
+  .info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.6rem;
+    text-align: center;
+  }
+
+  .info-card span {
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 0.6rem;
+    color: var(--accent);
+  }
+
+  .info-card h3 {
+    color: var(--text-main);
+    margin-bottom: 0.4rem;
+  }
+
+  .info-card p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .sources-list {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+
+  .sources-list span {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    padding: 0.65rem 1.2rem;
+    border-radius: 999px;
+    font-weight: 800;
+    transition: 0.25s ease;
+  }
+
+  .sources-list span:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-3px);
+  }
+
+  .footer {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 1100px) {
+    .nav-inner {
+      gap: 0.7rem;
+    }
+
+    .nav-links {
+      gap: 1rem;
+    }
+
+    .brand {
+      font-size: 0.9rem;
+    }
+
+    .brand-logo {
+      width: 60px;
+      height: 60px;
+    }
+  }
+
+  @media (max-width: 980px) {
+    .contact-grid,
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .nav-links {
+      position: fixed;
+      top: 82px;
+      right: 0;
+      width: 72%;
+      height: calc(100vh - 82px);
+      background: var(--nav-bg);
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 2rem;
+      transform: translateX(100%);
+      transition: 0.3s ease;
+      border-left: 1px solid var(--border);
+    }
+
+    .nav-links.open {
+      transform: translateX(0);
+    }
+
+    .burger {
+      display: block;
+    }
+
+    .theme-btn {
+      padding: 0.5rem 0.8rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .brand {
+      font-size: 0.8rem;
+      max-width: 190px;
+      white-space: normal;
+      line-height: 1.2;
+      gap: 0.5rem;
+    }
+
+    .brand-logo {
+      width: 50px;
+      height: 50px;
+      padding: 3px;
+    }
+
+    .section {
+      padding: 4rem 1rem;
+    }
+
+    .contact-card {
+      padding: 1.5rem;
+    }
+
+    .person-photo,
+    .avatar {
+      width: 86px;
+      height: 86px;
+    }
+
+    .email-link {
+      font-size: 0.82rem;
+      padding: 0.7rem 0.9rem;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<nav class="topbar">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">
+      <img src="logo-fdf.jfif" alt="Forest Data Fire Tunisia" class="brand-logo">
+      <span>Observatoire Incendies — Tunisie</span>
+    </a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Le projet</a></li>
+      <li><a href="tableau-de-bord.html">Tableau de bord</a></li>
+      <li><a href="methodologie.html">Méthodologie</a></li>
+      <li><a href="contact.html" class="active">Contact</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <button class="theme-btn" id="themeToggle" type="button">🌙 Mode sombre</button>
+      <button class="burger" id="burger" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-content">
+    <span class="hero-tag">Contact & crédits</span>
+    <h1>Nous <span>contacter</span></h1>
+    <p>
+      Retrouvez les contacts associés au projet de l’Observatoire numérique des incendies
+      de forêt en Tunisie.
+    </p>
+  </div>
+</header>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Équipe du projet</div>
+    <h2 class="section-title">Contacts principaux</h2>
+    <p class="section-lead">
+      Cette plateforme s’inscrit dans le cadre d’un travail universitaire en géomatique,
+      environnement et aménagement, portant sur le suivi et la visualisation des incendies
+      de forêt dans le Tell septentrional tunisien.
+    </p>
+
+    <div class="contact-grid">
+      <div class="contact-card">
+        <img src="Amani.png" alt="Photo de Amani Weslati" class="person-photo">
+        <h3>Amani Weslati</h3>
+        <p class="role">Auteure du mémoire<br>Mastère Géomatique, Environnement et Aménagement</p>
+        <a class="email-link" href="mailto:ameniw4@gmail.com">ameniw4@gmail.com</a>
+      </div>
+
+      <div class="contact-card">
+        <div class="avatar">👨‍🏫</div>
+        <h3>Brahim Jaziri</h3>
+        <p class="role">Encadrant universitaire<br>Faculté des Sciences Humaines et Sociales de Tunis</p>
+        <a class="email-link" href="mailto:brahim.jaziri@fshst.rnu.tn">brahim.jaziri@fshst.rnu.tn</a>
+      </div>
+
+      <div class="contact-card">
+        <div class="avatar">🌲</div>
+        <h3>Kamel Aloui</h3>
+        <p class="role">Maître de stage<br>Direction Générale des Forêts</p>
+        <a class="email-link" href="mailto:aloui.kamel77@yahoo.fr">aloui.kamel77@yahoo.fr</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-kicker">Informations</div>
+    <h2 class="section-title">Cadre du projet</h2>
+    <p class="section-lead">
+      Le site présente les résultats d’un travail consacré à la structuration,
+      l’analyse et la visualisation des données relatives aux incendies de forêt.
+    </p>
+
+    <div class="info-grid">
+      <div class="info-card">
+        <span>🎓</span>
+        <h3>Formation</h3>
+        <p>Mastère Géomatique, Environnement et Aménagement.</p>
+      </div>
+
+      <div class="info-card">
+        <span>🏛️</span>
+        <h3>Institution</h3>
+        <p>Faculté des Sciences Humaines et Sociales de Tunis.</p>
+      </div>
+
+      <div class="info-card">
+        <span>🔥</span>
+        <h3>Thématique</h3>
+        <p>Incendies de forêt, SIG, Business Intelligence et aide à la décision.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Sources</div>
+    <h2 class="section-title">Sources et données mobilisées</h2>
+    <p class="section-lead">
+      L’observatoire s’appuie sur des données institutionnelles, satellitaires,
+      cartographiques et climatiques.
+    </p>
+
+    <div class="sources-list">
+      <span>DGF</span>
+      <span>FIRMS</span>
+      <span>Copernicus</span>
+      <span>INM</span>
+      <span>SIG</span>
+      <span>Power BI</span>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  © 2026 — Observatoire numérique des incendies de forêt en Tunisie |
+  WESLATI Amani — Encadrement : Brahim Jaziri
+</footer>
+
+<script>
+  const burger = document.getElementById("burger");
+  const navLinks = document.getElementById("navLinks");
+  const themeToggle = document.getElementById("themeToggle");
+
+  burger.addEventListener("click", () => {
+    navLinks.classList.toggle("open");
+  });
+
+  navLinks.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", () => {
+      navLinks.classList.remove("open");
+    });
+  });
+
+  function updateThemeButton(theme) {
+    if (theme === "light") {
+      themeToggle.textContent = "☀️ Mode clair";
+    } else {
+      themeToggle.textContent = "🌙 Mode sombre";
+    }
+  }
+
+  const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+  updateThemeButton(currentTheme);
+
+  themeToggle.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "light" ? "dark" : "light";
+
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme-incendie", next);
+    updateThemeButton(next);
+  });
+</script>
+
+</body>
+</html>
