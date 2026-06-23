@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Méthodologie — Observatoire numérique des incendies de forêt en Tunisie</title>
+<meta name="description" content="Méthodologie de l’observatoire numérique des incendies de forêt en Tunisie : collecte, SIG, ETL, Power BI et visualisation interactive." />
+
+<script>
+  (function () {
+    try {
+      const savedTheme = localStorage.getItem("theme-incendie");
+      const preferredTheme = savedTheme || "dark";
+      document.documentElement.setAttribute("data-theme", preferredTheme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  })();
+</script>
+
+<style>
+  :root {
+    --bg-main: #0d1a0d;
+    --bg-secondary: #132613;
+    --bg-card: rgba(255, 255, 255, 0.045);
+    --text-main: #ffffff;
+    --text-soft: #9FE1CB;
+    --text-muted: rgba(159, 225, 203, 0.78);
+    --accent: #ff4500;
+    --accent-light: #ff6a33;
+    --border: rgba(159, 225, 203, 0.18);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    --nav-bg: rgba(13, 26, 13, 0.92);
+  }
+
+  html[data-theme="light"] {
+    --bg-main: #f3faf5;
+    --bg-secondary: #eaf5ee;
+    --bg-card: rgba(255, 255, 255, 0.82);
+    --text-main: #102514;
+    --text-soft: #285c3a;
+    --text-muted: #4a6f58;
+    --accent: #ff4500;
+    --accent-light: #e85a2a;
+    --border: rgba(24, 75, 42, 0.18);
+    --shadow: 0 18px 45px rgba(40, 80, 50, 0.13);
+    --nav-bg: rgba(255, 255, 255, 0.94);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-soft);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--nav-bg);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-inner {
+    max-width: 1280px;
+    margin: auto;
+    padding: 0.65rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .brand {
+    color: var(--text-main);
+    font-weight: 800;
+    font-size: 1rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .brand-logo {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    border-radius: 50%;
+    background: #ffffff;
+    padding: 4px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+    transition: 0.25s ease;
+  }
+
+  .brand-logo:hover {
+    transform: scale(1.05);
+  }
+
+  .nav-links {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 1.7rem;
+  }
+
+  .nav-links a {
+    color: var(--text-soft);
+    font-weight: 700;
+    font-size: 0.95rem;
+    position: relative;
+    padding-bottom: 0.25rem;
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--accent);
+  }
+
+  .nav-links a.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.35rem;
+    width: 100%;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .theme-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-soft);
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.25s ease;
+    white-space: nowrap;
+  }
+
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .burger {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 1.7rem;
+    cursor: pointer;
+  }
+
+  .hero {
+    min-height: 62vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6.5rem 1.5rem 4rem;
+    background:
+      radial-gradient(circle at top right, rgba(255, 69, 0, 0.18), transparent 38%),
+      radial-gradient(circle at bottom left, rgba(159, 225, 203, 0.13), transparent 42%),
+      linear-gradient(135deg, var(--bg-main), var(--bg-secondary));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(159, 225, 203, 0.035) 0 1px, transparent 1px 58px),
+      repeating-linear-gradient(90deg, rgba(159, 225, 203, 0.035) 0 1px, transparent 1px 58px);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    max-width: 980px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    margin-bottom: 1.4rem;
+  }
+
+  .hero h1 {
+    color: var(--text-main);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    margin-bottom: 1.1rem;
+  }
+
+  .hero h1 span {
+    color: var(--accent);
+  }
+
+  .hero p {
+    max-width: 820px;
+    margin: 0 auto;
+    color: var(--text-soft);
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+  }
+
+  .hero-actions {
+    margin-top: 2.3rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: inline-block;
+    padding: 0.95rem 1.65rem;
+    border-radius: 999px;
+    font-weight: 800;
+    transition: 0.25s ease;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 14px 35px rgba(255, 69, 0, 0.28);
+  }
+
+  .btn-secondary {
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    background: var(--bg-card);
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: translateY(-3px);
+  }
+
+  .section {
+    padding: 5.5rem 1.5rem;
+    background: var(--bg-main);
+  }
+
+  .section.alt {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: auto;
+  }
+
+  .section-kicker {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    color: var(--text-main);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    text-align: center;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .section-lead {
+    max-width: 900px;
+    margin: 0 auto 3rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.08rem;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.4rem;
+  }
+
+  .text-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+  }
+
+  .text-card h3 {
+    color: var(--text-main);
+    font-size: 1.4rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .text-card p {
+    color: var(--text-muted);
+    margin-bottom: 0.8rem;
+  }
+
+  .workflow {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+    margin-top: 2.2rem;
+  }
+
+  .step-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.5rem;
+    min-height: 210px;
+    transition: 0.25s ease;
+  }
+
+  .step-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+  }
+
+  .step-number {
+    color: var(--accent);
+    font-weight: 900;
+    font-size: 1.7rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .step-card h3 {
+    color: var(--text-main);
+    font-size: 1.08rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .step-card p {
+    color: var(--text-muted);
+    font-size: 0.93rem;
+  }
+
+  .data-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.1rem;
+  }
+
+  .data-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.6rem;
+    text-align: center;
+    transition: 0.25s ease;
+  }
+
+  .data-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-5px);
+  }
+
+  .data-icon {
+    font-size: 2.4rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .data-card h3 {
+    color: var(--text-main);
+    font-size: 1.08rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .data-card p {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+  }
+
+  .etl-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.3rem;
+    margin-top: 2rem;
+  }
+
+  .etl-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+  }
+
+  .etl-card .letter {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .etl-card h3 {
+    color: var(--text-main);
+    font-size: 1.35rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .etl-card p {
+    color: var(--text-muted);
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+
+  .tool-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.35rem;
+    text-align: center;
+    color: var(--text-main);
+    font-weight: 900;
+    transition: 0.25s ease;
+  }
+
+  .tool-card span {
+    display: block;
+    color: var(--accent);
+    font-size: 2rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .tool-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .method-list {
+    list-style: none;
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .method-list li {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem 1.2rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+
+  .method-list span {
+    color: var(--accent);
+    font-weight: 900;
+  }
+
+  .limit-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 6px solid var(--accent);
+    border-radius: 22px;
+    padding: 2.2rem;
+    box-shadow: var(--shadow);
+  }
+
+  .limit-box h3 {
+    color: var(--text-main);
+    margin-bottom: 0.8rem;
+    font-size: 1.45rem;
+  }
+
+  .limit-box p {
+    color: var(--text-muted);
+  }
+
+  .footer {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 1100px) {
+    .nav-inner {
+      gap: 0.7rem;
+    }
+
+    .nav-links {
+      gap: 1rem;
+    }
+
+    .brand {
+      font-size: 0.9rem;
+    }
+
+    .brand-logo {
+      width: 60px;
+      height: 60px;
+    }
+  }
+
+  @media (max-width: 1050px) {
+    .workflow {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .data-grid,
+    .tools-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .etl-box,
+    .grid-2 {
+      grid-template-columns: 1fr;
+    }
+
+    .nav-links {
+      position: fixed;
+      top: 82px;
+      right: 0;
+      width: 72%;
+      height: calc(100vh - 82px);
+      background: var(--nav-bg);
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 2rem;
+      transform: translateX(100%);
+      transition: 0.3s ease;
+      border-left: 1px solid var(--border);
+    }
+
+    .nav-links.open {
+      transform: translateX(0);
+    }
+
+    .burger {
+      display: block;
+    }
+
+    .theme-btn {
+      padding: 0.5rem 0.8rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .brand {
+      font-size: 0.8rem;
+      max-width: 190px;
+      white-space: normal;
+      line-height: 1.2;
+      gap: 0.5rem;
+    }
+
+    .brand-logo {
+      width: 50px;
+      height: 50px;
+      padding: 3px;
+    }
+
+    .workflow,
+    .data-grid,
+    .tools-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .section {
+      padding: 4rem 1rem;
+    }
+
+    .text-card,
+    .etl-card,
+    .limit-box {
+      padding: 1.5rem;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<nav class="topbar">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">
+      <img src="logo-fdf.jfif" alt="Forest Data Fire Tunisia" class="brand-logo">
+      <span>Observatoire Incendies — Tunisie</span>
+    </a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Le projet</a></li>
+      <li><a href="tableau-de-bord.html">Tableau de bord</a></li>
+      <li><a href="methodologie.html" class="active">Méthodologie</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <button class="theme-btn" id="themeToggle" type="button">🌙 Mode sombre</button>
+      <button class="burger" id="burger" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-content">
+    <span class="hero-tag">Chaîne géomatique intégrée</span>
+    <h1>La <span>méthodologie</span></h1>
+    <p>
+      Une démarche structurée pour collecter, harmoniser, géoréférencer, analyser et visualiser
+      les données relatives aux incendies de forêt dans le Tell septentrional tunisien.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#workflow" class="btn-primary">Voir les étapes →</a>
+      <a href="tableau-de-bord.html" class="btn-secondary">Voir le tableau de bord</a>
+    </div>
+  </div>
+</header>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Principe général</div>
+    <h2 class="section-title">De la donnée brute à la visualisation interactive</h2>
+    <p class="section-lead">
+      La méthodologie adoptée repose sur une approche géomatique et décisionnelle. Elle combine
+      les apports du SIG, de la structuration de bases de données, du processus ETL et de la Business
+      Intelligence.
+    </p>
+
+    <div class="grid-2">
+      <div class="text-card">
+        <h3>Une approche géomatique</h3>
+        <p>
+          Le système d’information géographique permet d’organiser les données selon leur localisation,
+          leur date, leur surface et leur contexte territorial. Il constitue la base de l’analyse spatiale
+          des incendies.
+        </p>
+        <p>
+          Cette approche permet de passer d’une information descriptive à une lecture cartographique
+          et territoriale du phénomène incendiaire.
+        </p>
+      </div>
+
+      <div class="text-card">
+        <h3>Une approche décisionnelle</h3>
+        <p>
+          La Business Intelligence permet de transformer les données structurées en indicateurs,
+          graphiques, cartes et filtres interactifs.
+        </p>
+        <p>
+          Le tableau de bord Power BI devient ainsi l’interface centrale de lecture, d’analyse et d’aide
+          à la décision.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt" id="workflow">
+  <div class="container">
+    <div class="section-kicker">Chaîne de traitement</div>
+    <h2 class="section-title">Les étapes méthodologiques</h2>
+    <p class="section-lead">
+      Le travail suit une chaîne progressive allant de la collecte des données à la restitution des résultats
+      sous forme de tableau de bord interactif.
+    </p>
+
+    <div class="workflow">
+      <div class="step-card">
+        <div class="step-number">01</div>
+        <h3>Collecte</h3>
+        <p>Rassembler les données institutionnelles, spatiales, satellitaires et environnementales.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">02</div>
+        <h3>Nettoyage</h3>
+        <p>Corriger les erreurs, homogénéiser les formats et préparer les données pour l’analyse.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">03</div>
+        <h3>Géoréférencement</h3>
+        <p>Associer les incendies à une localisation spatiale exploitable dans un environnement SIG.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">04</div>
+        <h3>Structuration</h3>
+        <p>Organiser les données dans une base cohérente, multidimensionnelle et interrogeable.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">05</div>
+        <h3>Visualisation</h3>
+        <p>Restituer les résultats dans un tableau de bord interactif avec cartes, filtres et indicateurs.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Sources</div>
+    <h2 class="section-title">Données mobilisées</h2>
+    <p class="section-lead">
+      La construction de l’observatoire repose sur la complémentarité entre données institutionnelles,
+      données spatiales, données satellitaires et données environnementales.
+    </p>
+
+    <div class="data-grid">
+      <div class="data-card">
+        <div class="data-icon">🏛️</div>
+        <h3>Données DGF</h3>
+        <p>Tableaux Excel des incendies de forêt et informations institutionnelles sur les événements.</p>
+      </div>
+
+      <div class="data-card">
+        <div class="data-icon">🗺️</div>
+        <h3>Données SIG</h3>
+        <p>Polygones d’incendies, limites administratives et couches spatiales nécessaires à l’analyse.</p>
+      </div>
+
+      <div class="data-card">
+        <div class="data-icon">🛰️</div>
+        <h3>Données satellitaires</h3>
+        <p>Sources complémentaires pour renforcer la lecture spatiale des feux et des surfaces brûlées.</p>
+      </div>
+
+      <div class="data-card">
+        <div class="data-icon">🌦️</div>
+        <h3>Données environnementales</h3>
+        <p>Informations climatiques, bioclimatiques et forestières utiles à l’interprétation du risque.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-kicker">ETL</div>
+    <h2 class="section-title">Extraction, transformation et chargement</h2>
+    <p class="section-lead">
+      Le processus ETL constitue l’étape centrale de préparation des données. Il permet de transformer
+      des informations hétérogènes en une base propre, structurée et exploitable.
+    </p>
+
+    <div class="etl-box">
+      <div class="etl-card">
+        <div class="letter">E</div>
+        <h3>Extract</h3>
+        <p>
+          Extraction des données à partir des fichiers Excel, couches SIG, documents institutionnels
+          et sources complémentaires utilisées dans le projet.
+        </p>
+      </div>
+
+      <div class="etl-card">
+        <div class="letter">T</div>
+        <h3>Transform</h3>
+        <p>
+          Nettoyage, correction, harmonisation des noms, normalisation des dates, vérification des valeurs
+          et préparation des champs nécessaires à l’analyse.
+        </p>
+      </div>
+
+      <div class="etl-card">
+        <div class="letter">L</div>
+        <h3>Load</h3>
+        <p>
+          Chargement des données structurées dans un environnement d’analyse permettant la production
+          de cartes, graphiques, indicateurs et filtres interactifs.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Outils</div>
+    <h2 class="section-title">Environnement technique</h2>
+    <p class="section-lead">
+      La plateforme mobilise des outils complémentaires permettant de traiter à la fois la dimension
+      spatiale, statistique et décisionnelle des incendies.
+    </p>
+
+    <div class="tools-grid">
+      <div class="tool-card"><span>🗺️</span>SIG</div>
+      <div class="tool-card"><span>📊</span>Power BI</div>
+      <div class="tool-card"><span>📁</span>Excel</div>
+      <div class="tool-card"><span>🧮</span>DAX</div>
+      <div class="tool-card"><span>🔄</span>Power Query</div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-kicker">Base de données</div>
+    <h2 class="section-title">Structuration et modélisation</h2>
+    <p class="section-lead">
+      L’objectif est de construire une base organisée autour des dimensions essentielles de l’analyse :
+      temps, espace, événement, surface brûlée et territoire concerné.
+    </p>
+
+    <div class="grid-2">
+      <div class="text-card">
+        <h3>Organisation des informations</h3>
+        <p>
+          Les données sont structurées de manière à faciliter les croisements entre les incendies,
+          les gouvernorats, les années, les superficies brûlées et les indicateurs de suivi.
+        </p>
+      </div>
+
+      <div class="text-card">
+        <h3>Modélisation analytique</h3>
+        <p>
+          La modélisation permet de relier les tables de données entre elles et de construire des mesures
+          adaptées à l’analyse dans Power BI.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Contrôle</div>
+    <h2 class="section-title">Vérification et cohérence des résultats</h2>
+    <p class="section-lead">
+      La qualité de l’observatoire dépend de la cohérence des données intégrées et de la fiabilité
+      des traitements appliqués.
+    </p>
+
+    <ul class="method-list">
+      <li><span>01</span> Vérification des champs essentiels : date, gouvernorat, localisation et surface brûlée.</li>
+      <li><span>02</span> Contrôle des doublons et des incohérences dans les bases initiales.</li>
+      <li><span>03</span> Harmonisation des noms de lieux et des unités administratives.</li>
+      <li><span>04</span> Vérification de la compatibilité entre les données attributaires et les couches spatiales.</li>
+      <li><span>05</span> Contrôle de la cohérence des indicateurs affichés dans le tableau de bord.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-kicker">Précaution scientifique</div>
+    <h2 class="section-title">Un outil d’appui, non un substitut au terrain</h2>
+
+    <div class="limit-box">
+      <h3>Lecture critique des données</h3>
+      <p>
+        L’observatoire permet d’améliorer la lisibilité des données et de renforcer les capacités
+        de suivi et d’analyse. Toutefois, les résultats doivent être interprétés avec prudence :
+        un tableau de bord ne remplace pas l’expertise de terrain, mais il constitue un outil
+        complémentaire d’observation, de synthèse et d’aide à l’action.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  © 2026 — Observatoire numérique des incendies de forêt en Tunisie |
+  Méthodologie SIG, ETL, Power BI & aide à la décision
+</footer>
+
+<script>
+  const burger = document.getElementById("burger");
+  const navLinks = document.getElementById("navLinks");
+  const themeToggle = document.getElementById("themeToggle");
+
+  burger.addEventListener("click", () => {
+    navLinks.classList.toggle("open");
+  });
+
+  navLinks.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", () => {
+      navLinks.classList.remove("open");
+    });
+  });
+
+  function updateThemeButton(theme) {
+    if (theme === "light") {
+      themeToggle.textContent = "☀️ Mode clair";
+    } else {
+      themeToggle.textContent = "🌙 Mode sombre";
+    }
+  }
+
+  const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+  updateThemeButton(currentTheme);
+
+  themeToggle.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "light" ? "dark" : "light";
+
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme-incendie", next);
+    updateThemeButton(next);
+  });
+</script>
+
+</body>
+</html>
