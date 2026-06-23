@@ -314,17 +314,18 @@
 
   .person-photo,
   .avatar {
-    width: 96px;
-    height: 96px;
+    width: 115px;
+    height: 115px;
     border-radius: 50%;
     margin: 0 auto 1.2rem;
-    border: 2px solid rgba(255, 69, 0, 0.45);
+    border: 3px solid rgba(255, 69, 0, 0.65);
     background: #ffffff;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
   }
 
   .person-photo {
     object-fit: cover;
+    object-position: center top;
     display: block;
   }
 
@@ -508,8 +509,8 @@
 
     .person-photo,
     .avatar {
-      width: 86px;
-      height: 86px;
+      width: 100px;
+      height: 100px;
     }
 
     .email-link {
@@ -525,7 +526,12 @@
 <nav class="topbar">
   <div class="nav-inner">
     <a class="brand" href="index.html">
-      <img src="./logo-fdf.jpg" alt="Logo Observatoire Incendies" class="brand-logo">
+      <img 
+        src="./logo-fdf.jpg" 
+        alt="Logo Observatoire Incendies" 
+        class="brand-logo"
+        onerror="this.onerror=null; this.src='./logo-fdf.jfif';"
+      >
       <span>Observatoire Incendies — Tunisie</span>
     </a>
 
@@ -567,7 +573,12 @@
     <div class="contact-grid">
 
       <div class="contact-card">
-        <img src="./Amani.jpg" alt="Photo de Amani Weslati" class="person-photo">
+        <img 
+          src="./Amani.jpg" 
+          alt="Photo de Amani Weslati" 
+          class="person-photo"
+          onerror="this.onerror=null; this.src='./Amani.png';"
+        >
         <h3>Amani Weslati</h3>
         <p class="role">
           Auteure du mémoire<br>
