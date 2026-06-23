@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Le projet — Observatoire numérique des incendies de forêt en Tunisie</title>
+<meta name="description" content="Le projet — Observatoire numérique des incendies de forêt en Tunisie. SIG, Business Intelligence et aide à la décision." />
+
+<script>
+  (function () {
+    try {
+      const savedTheme = localStorage.getItem("theme-incendie");
+      const preferredTheme = savedTheme || "dark";
+      document.documentElement.setAttribute("data-theme", preferredTheme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  })();
+</script>
+
+<style>
+  :root {
+    --bg-main: #0d1a0d;
+    --bg-secondary: #132613;
+    --bg-card: rgba(255, 255, 255, 0.045);
+    --text-main: #ffffff;
+    --text-soft: #9FE1CB;
+    --text-muted: rgba(159, 225, 203, 0.78);
+    --accent: #ff4500;
+    --border: rgba(159, 225, 203, 0.18);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    --nav-bg: rgba(13, 26, 13, 0.92);
+  }
+
+  html[data-theme="light"] {
+    --bg-main: #f3faf5;
+    --bg-secondary: #eaf5ee;
+    --bg-card: rgba(255, 255, 255, 0.82);
+    --text-main: #102514;
+    --text-soft: #285c3a;
+    --text-muted: #4a6f58;
+    --accent: #ff4500;
+    --border: rgba(24, 75, 42, 0.18);
+    --shadow: 0 18px 45px rgba(40, 80, 50, 0.13);
+    --nav-bg: rgba(255, 255, 255, 0.94);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: var(--bg-main);
+    color: var(--text-soft);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--nav-bg);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-inner {
+    max-width: 1280px;
+    margin: auto;
+    padding: 0.65rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .brand {
+    color: var(--text-main);
+    font-weight: 800;
+    font-size: 1rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .brand-logo {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    border-radius: 50%;
+    background: #ffffff;
+    padding: 4px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+    transition: 0.25s ease;
+  }
+
+  .brand-logo:hover {
+    transform: scale(1.05);
+  }
+
+  .nav-links {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 1.7rem;
+  }
+
+  .nav-links a {
+    color: var(--text-soft);
+    font-weight: 700;
+    font-size: 0.95rem;
+    position: relative;
+    padding-bottom: 0.25rem;
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--accent);
+  }
+
+  .nav-links a.active::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.35rem;
+    width: 100%;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .theme-btn {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-soft);
+    border-radius: 999px;
+    padding: 0.6rem 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.25s ease;
+    white-space: nowrap;
+  }
+
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .burger {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    font-size: 1.7rem;
+    cursor: pointer;
+  }
+
+  .hero {
+    min-height: 78vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 7rem 1.5rem 4rem;
+    background:
+      radial-gradient(circle at top right, rgba(255, 69, 0, 0.18), transparent 38%),
+      radial-gradient(circle at bottom left, rgba(159, 225, 203, 0.13), transparent 42%),
+      linear-gradient(135deg, var(--bg-main), var(--bg-secondary));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(159, 225, 203, 0.035) 0 1px, transparent 1px 58px),
+      repeating-linear-gradient(90deg, rgba(159, 225, 203, 0.035) 0 1px, transparent 1px 58px);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    max-width: 980px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    margin-bottom: 1.4rem;
+  }
+
+  .hero h1 {
+    color: var(--text-main);
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -1.5px;
+    margin-bottom: 1.1rem;
+  }
+
+  .hero h1 span {
+    color: var(--accent);
+  }
+
+  .hero p {
+    max-width: 780px;
+    margin: 0 auto;
+    color: var(--text-soft);
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+  }
+
+  .hero-actions {
+    margin-top: 2.3rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    display: inline-block;
+    padding: 0.95rem 1.65rem;
+    border-radius: 999px;
+    font-weight: 800;
+    transition: 0.25s ease;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 14px 35px rgba(255, 69, 0, 0.28);
+  }
+
+  .btn-secondary {
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    background: var(--bg-card);
+  }
+
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: translateY(-3px);
+  }
+
+  .section {
+    padding: 5.5rem 1.5rem;
+    background: var(--bg-main);
+  }
+
+  .section.alt {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .container {
+    max-width: 1180px;
+    margin: auto;
+  }
+
+  .section-kicker {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    color: var(--text-main);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    text-align: center;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  .section-lead {
+    max-width: 850px;
+    margin: 0 auto 3rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.08rem;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 2rem;
+    align-items: center;
+  }
+
+  .text-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 2.3rem;
+    box-shadow: var(--shadow);
+  }
+
+  .text-card h3 {
+    color: var(--text-main);
+    font-size: 1.55rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .text-card p {
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+
+  .visual-card {
+    min-height: 330px;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    background:
+      radial-gradient(circle at 35% 35%, rgba(255, 69, 0, 0.35), transparent 22%),
+      radial-gradient(circle at 70% 65%, rgba(255, 69, 0, 0.22), transparent 20%),
+      linear-gradient(135deg, var(--bg-secondary), var(--bg-main));
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .visual-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(159, 225, 203, 0.055) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(90deg, rgba(159, 225, 203, 0.055) 0 1px, transparent 1px 42px);
+  }
+
+  .visual-card div {
+    position: relative;
+    z-index: 2;
+  }
+
+  .visual-icon {
+    font-size: 4rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .visual-card h3 {
+    color: var(--text-main);
+    font-size: 1.6rem;
+  }
+
+  .problem-box {
+    max-width: 950px;
+    margin: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 6px solid var(--accent);
+    border-radius: 22px;
+    padding: 2.4rem;
+    box-shadow: var(--shadow);
+  }
+
+  .problem-box p {
+    color: var(--text-main);
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.8;
+  }
+
+  .objectives-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.3rem;
+  }
+
+  .objective {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.8rem;
+    transition: 0.25s ease;
+    min-height: 180px;
+  }
+
+  .objective:hover {
+    transform: translateY(-6px);
+    border-color: var(--accent);
+  }
+
+  .objective .num {
+    color: var(--accent);
+    font-weight: 900;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .objective h3 {
+    color: var(--text-main);
+    font-size: 1.15rem;
+    margin-bottom: 0.55rem;
+  }
+
+  .objective p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+  }
+
+  .zone-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .zone-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.2rem;
+    text-align: center;
+    color: var(--text-main);
+    font-weight: 800;
+  }
+
+  .value-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+  }
+
+  .value-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.4rem;
+    text-align: center;
+  }
+
+  .value-card span {
+    display: block;
+    color: var(--accent);
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .value-card p {
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .footer {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 1100px) {
+    .nav-inner {
+      gap: 0.7rem;
+    }
+
+    .nav-links {
+      gap: 1rem;
+    }
+
+    .brand {
+      font-size: 0.9rem;
+    }
+
+    .brand-logo {
+      width: 60px;
+      height: 60px;
+    }
+  }
+
+  @media (max-width: 920px) {
+    .grid-2,
+    .objectives-grid,
+    .value-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .zone-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .nav-links {
+      position: fixed;
+      top: 82px;
+      right: 0;
+      width: 72%;
+      height: calc(100vh - 82px);
+      background: var(--nav-bg);
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 2rem;
+      transform: translateX(100%);
+      transition: 0.3s ease;
+      border-left: 1px solid var(--border);
+    }
+
+    .nav-links.open {
+      transform: translateX(0);
+    }
+
+    .burger {
+      display: block;
+    }
+
+    .theme-btn {
+      padding: 0.5rem 0.8rem;
+      font-size: 0.85rem;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .brand {
+      font-size: 0.78rem;
+      max-width: 180px;
+      white-space: normal;
+      line-height: 1.2;
+      gap: 0.5rem;
+    }
+
+    .brand-logo {
+      width: 50px;
+      height: 50px;
+      padding: 3px;
+    }
+
+    .nav-actions {
+      gap: 0.45rem;
+    }
+
+    .zone-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .section {
+      padding: 4rem 1rem;
+    }
+
+    .text-card,
+    .problem-box {
+      padding: 1.6rem;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<nav class="topbar">
+  <div class="nav-inner">
+    <a class="brand" href="index.html">
+      <img src="logo-fdf.jfif" alt="Forest Data Fire Tunisia" class="brand-logo">
+      <span>Observatoire Incendies — Tunisie</span>
+    </a>
+
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html" class="active">Le projet</a></li>
+      <li><a href="tableau-de-bord.html">Tableau de bord</a></li>
+      <li><a href="methodologie.html">Méthodologie</a></li>
+      <li><a href="contact.html">Contact</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <button class="theme-btn" id="themeToggle" type="button">🌙 Mode sombre</button>
+      <button class="burger" id="burger" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-content">
+    <span class="hero-tag">SIG & Business Intelligence</span>
+    <h1>Le projet <span>Incendie</span></h1>
+    <p>
+      Un observatoire numérique pour suivre, analyser et visualiser les incendies de forêt
+      dans le Tell septentrional tunisien.
+    </p>
+
+    <div class="hero-actions">
+      <a href="tableau-de-bord.html" class="btn-primary">Explorer le tableau de bord →</a>
+      <a href="methodologie.html" class="btn-secondary">Voir la méthodologie</a>
+    </div>
+  </div>
+</header>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Présentation</div>
+    <h2 class="section-title">Un outil d’analyse territoriale des incendies</h2>
+    <p class="section-lead">
+      Les incendies de forêt constituent une menace majeure pour les écosystèmes forestiers tunisiens.
+      Ils participent à la fragmentation des massifs, à la dégradation des habitats naturels et à la perte
+      de biodiversité.
+    </p>
+
+    <div class="grid-2">
+      <div class="text-card">
+        <h3>Une plateforme au service de la connaissance</h3>
+        <p>
+          L’observatoire numérique des incendies de forêt en Tunisie s’inscrit dans une démarche
+          géomatique intégrée. Il vise à organiser, spatialiser et valoriser les données relatives aux feux
+          de forêt dans le Tell septentrional tunisien.
+        </p>
+        <p>
+          Le projet repose sur la mise en place d’une base de données cohérente, géoréférencée et exploitable,
+          associée à un tableau de bord interactif permettant de visualiser les dynamiques spatiales et temporelles
+          des incendies.
+        </p>
+      </div>
+
+      <div class="visual-card">
+        <div>
+          <div class="visual-icon">🛰️</div>
+          <h3>SIG + Données + Visualisation</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-kicker">Problématique</div>
+    <h2 class="section-title">Pourquoi créer cet observatoire ?</h2>
+    <p class="section-lead">
+      La gestion des données relatives aux incendies de forêt reste confrontée à plusieurs contraintes :
+      dispersion des sources, hétérogénéité des formats, difficulté de localisation précise et faible exploitation
+      cartographique.
+    </p>
+
+    <div class="problem-box">
+      <p>
+        Comment concevoir une chaîne géomatique intégrée permettant de collecter, organiser,
+        géoréférencer, analyser et visualiser les données relatives aux incendies de forêt, afin de produire
+        un outil fiable d’aide à la décision pour le Tell septentrional tunisien ?
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Objectifs</div>
+    <h2 class="section-title">Les objectifs du projet</h2>
+    <p class="section-lead">
+      L’observatoire vise à transformer des données techniques dispersées en un outil clair,
+      structuré et directement exploitable pour l’analyse territoriale.
+    </p>
+
+    <div class="objectives-grid">
+      <div class="objective">
+        <div class="num">01</div>
+        <h3>Localiser les incendies</h3>
+        <p>Identifier et géoréférencer les événements d’incendies de forêt.</p>
+      </div>
+
+      <div class="objective">
+        <div class="num">02</div>
+        <h3>Structurer les données</h3>
+        <p>Harmoniser les informations disponibles dans une base cohérente.</p>
+      </div>
+
+      <div class="objective">
+        <div class="num">03</div>
+        <h3>Analyser les dynamiques</h3>
+        <p>Produire des indicateurs spatiaux et temporels d’aide à la décision.</p>
+      </div>
+
+      <div class="objective">
+        <div class="num">04</div>
+        <h3>Visualiser les résultats</h3>
+        <p>Développer un tableau de bord interactif pour explorer les données.</p>
+      </div>
+
+      <div class="objective">
+        <div class="num">05</div>
+        <h3>Comparer les territoires</h3>
+        <p>Mettre en évidence les gouvernorats et secteurs les plus exposés.</p>
+      </div>
+
+      <div class="objective">
+        <div class="num">06</div>
+        <h3>Aider à la décision</h3>
+        <p>Appuyer la prévention, la gestion forestière et la planification territoriale.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-kicker">Zone d’étude</div>
+    <h2 class="section-title">Le Tell septentrional tunisien</h2>
+    <p class="section-lead">
+      La zone d’étude couvre la partie septentrionale de la Tunisie. Elle se distingue par l’importance
+      de son couvert forestier et par son exposition fréquente aux incendies de forêt.
+    </p>
+
+    <div class="text-card">
+      <h3>Un espace forestier stratégique</h3>
+      <p>
+        La zone étudiée regroupe les gouvernorats de Tunis, Ariana, Ben Arous, La Manouba, Bizerte,
+        Béja et Jendouba. Elle comprend les principaux massifs forestiers du Nord tunisien, notamment
+        la Kroumirie, les Mogods et les marges de la vallée de la Medjerda.
+      </p>
+    </div>
+
+    <div class="zone-grid">
+      <div class="zone-item">Tunis</div>
+      <div class="zone-item">Ariana</div>
+      <div class="zone-item">Ben Arous</div>
+      <div class="zone-item">La Manouba</div>
+      <div class="zone-item">Bizerte</div>
+      <div class="zone-item">Béja</div>
+      <div class="zone-item">Jendouba</div>
+      <div class="zone-item">Tell septentrional</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-kicker">Valeur ajoutée</div>
+    <h2 class="section-title">De la donnée brute à l’aide à la décision</h2>
+    <p class="section-lead">
+      L’observatoire permet de rendre les données plus lisibles, plus accessibles et plus utiles,
+      en combinant SIG, Business Intelligence et analyse spatiale.
+    </p>
+
+    <div class="value-grid">
+      <div class="value-card">
+        <span>📍</span>
+        <p>Localisation des incendies</p>
+      </div>
+
+      <div class="value-card">
+        <span>📊</span>
+        <p>Indicateurs temporels</p>
+      </div>
+
+      <div class="value-card">
+        <span>🗺️</span>
+        <p>Lecture territoriale</p>
+      </div>
+
+      <div class="value-card">
+        <span>🔥</span>
+        <p>Surfaces brûlées</p>
+      </div>
+
+      <div class="value-card">
+        <span>✅</span>
+        <p>Aide à la décision</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  © 2026 — Observatoire numérique des incendies de forêt en Tunisie |
+  Mastère Géomatique, Environnement et Aménagement — FSHST
+</footer>
+
+<script>
+  const burger = document.getElementById("burger");
+  const navLinks = document.getElementById("navLinks");
+  const themeToggle = document.getElementById("themeToggle");
+
+  burger.addEventListener("click", () => {
+    navLinks.classList.toggle("open");
+  });
+
+  navLinks.querySelectorAll("a").forEach(link => {
+    link.addEventListener("click", () => {
+      navLinks.classList.remove("open");
+    });
+  });
+
+  function updateThemeButton(theme) {
+    if (theme === "light") {
+      themeToggle.textContent = "☀️ Mode clair";
+    } else {
+      themeToggle.textContent = "🌙 Mode sombre";
+    }
+  }
+
+  const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+  updateThemeButton(currentTheme);
+
+  themeToggle.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme-incendie", next);
+    updateThemeButton(next);
+  });
+</script>
+
+</body>
+</html>
